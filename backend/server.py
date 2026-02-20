@@ -249,7 +249,11 @@ async def create_order(order_data: OrderCreate, current_user: dict = Depends(get
         coupon = await db.coupons.find_one({"code": order_data.coupon_code.upper()})
         if coupon and coupon["is_active"]:
             # Check expiry
-            if datetime.fromisoformat(coupon["expiry_date"]) > datetime.now(timezone.utc):
+            expiry_dt = datetime.fromisoformat(coupon["expiry_date"])
+            if expiry_dt.tzinfo is None:
+                expiry_dt = expiry_dt.replace(tzinfo=timezone.utc)
+            
+            if expiry_dt > datetime.now(timezone.utc):
                 # Check max uses
                 if coupon["max_uses"] is None or coupon["current_uses"] < coupon["max_uses"]:
                     discount_percentage = coupon["discount_percentage"]
