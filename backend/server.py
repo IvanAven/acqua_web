@@ -319,6 +319,10 @@ async def update_order_status(
         {"$set": {"status": update_data.status}}
     )
     
+    # If order is marked as delivered, check if customer qualifies for auto coupon
+    if update_data.status == "delivered":
+        await generate_loyalty_coupon(order["customer_email"])
+    
     updated_order = await db.orders.find_one({"id": order_id}, {"_id": 0})
     return Order(**updated_order)
 
