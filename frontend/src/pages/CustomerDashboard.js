@@ -226,6 +226,26 @@ const CustomerDashboard = () => {
                           {new Date(order.delivery_date).toLocaleDateString('es-MX')} - {order.delivery_time}
                         </span>
                       </div>
+                      {order.coupon_code && (
+                        <div className="flex items-start gap-2">
+                          <span className="text-slate-500 min-w-[120px]">Cupón:</span>
+                          <span className="text-green-600 font-medium flex items-center gap-1">
+                            <Tag className="w-3 h-3" />
+                            {order.coupon_code} ({order.discount_percentage}% OFF)
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-start gap-2">
+                        <span className="text-slate-500 min-w-[120px]">Total:</span>
+                        <span className="text-slate-900 font-semibold">
+                          ${order.final_total.toFixed(2)} MXN
+                          {order.discount_percentage > 0 && (
+                            <span className="text-slate-400 line-through ml-2 text-xs">
+                              ${order.original_total.toFixed(2)} MXN
+                            </span>
+                          )}
+                        </span>
+                      </div>
                       {order.notes && (
                         <div className="flex items-start gap-2">
                           <span className="text-slate-500 min-w-[120px]">Notas:</span>
