@@ -129,6 +129,45 @@ const CustomerDashboard = () => {
           </Button>
         </div>
 
+        {/* Available Coupons */}
+        {coupons.length > 0 && (
+          <div className="glass-card rounded-2xl p-6 shadow-sm mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Gift className="w-6 h-6 text-sky-500" />
+              <h2 className="text-2xl font-semibold text-slate-900">Tus Cupones Disponibles</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {coupons.map((coupon) => (
+                <div
+                  key={coupon.code}
+                  data-testid={`coupon-${coupon.code}`}
+                  className="bg-gradient-to-br from-sky-50 to-sky-100 border-2 border-sky-300 border-dashed rounded-xl p-4 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Tag className="w-5 h-5 text-sky-600" />
+                      <span className="font-bold text-sky-900 text-lg">{coupon.code}</span>
+                    </div>
+                    <span className="bg-sky-600 text-white px-3 py-1 rounded-full text-sm font-bold">
+                      {coupon.discount_percentage}% OFF
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-600 mb-2">
+                    {coupon.max_uses === 1 ? "Uso único" : `${coupon.max_uses || "Ilimitado"} usos`}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Válido hasta: {new Date(coupon.expiry_date).toLocaleDateString('es-MX')}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <p className="text-sm text-slate-500 mt-4 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" />
+              Aplica tus cupones al crear un nuevo pedido
+            </p>
+          </div>
+        )}
+
         {/* Orders List */}
         <div className="glass-card rounded-2xl p-6 shadow-sm">
           <h2 className="text-2xl font-semibold text-slate-900 mb-6">Mis Pedidos</h2>
