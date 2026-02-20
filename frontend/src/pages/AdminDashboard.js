@@ -104,6 +104,7 @@ const AdminDashboard = () => {
           <Route path="/" element={<OverviewTab token={token} />} />
           <Route path="/orders" element={<OrdersTab token={token} />} />
           <Route path="/customers" element={<CustomersTab token={token} />} />
+          <Route path="/coupons" element={<div className="p-8"><CouponsManagement token={token} /></div>} />
         </Routes>
       </main>
     </div>
