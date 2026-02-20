@@ -466,7 +466,11 @@ async def validate_coupon(coupon_data: CouponValidate, current_user: dict = Depe
         )
     
     # Check expiry
-    if datetime.fromisoformat(coupon["expiry_date"]) <= datetime.now(timezone.utc):
+    expiry_dt = datetime.fromisoformat(coupon["expiry_date"])
+    if expiry_dt.tzinfo is None:
+        expiry_dt = expiry_dt.replace(tzinfo=timezone.utc)
+    
+    if expiry_dt <= datetime.now(timezone.utc):
         return CouponValidateResponse(
             valid=False,
             discount_percentage=0,
