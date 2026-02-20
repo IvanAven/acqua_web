@@ -32,6 +32,9 @@ security = HTTPBearer()
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
+# Constants
+PRICE_PER_BOTTLE = 50  # MXN per bottle
+
 # ==================== MODELS ====================
 
 class UserCreate(BaseModel):
@@ -59,12 +62,37 @@ class Token(BaseModel):
     token_type: str
     user: User
 
+class CouponCreate(BaseModel):
+    code: str = Field(min_length=3, max_length=20, description="Código del cupón")
+    discount_percentage: int = Field(ge=1, le=100, description="Porcentaje de descuento")
+    expiry_date: str
+    max_uses: Optional[int] = None  # None = unlimited
+
+class Coupon(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    code: str
+    discount_percentage: int
+    expiry_date: str
+    is_active: bool
+    max_uses: Optional[int]
+    current_uses: int
+    created_at: str
+
+class CouponValidate(BaseModel):
+    code: str
+
+class CouponValidateResponse(BaseModel):
+    valid: bool
+    discount_percentage: int
+    message: str
+
 class OrderCreate(BaseModel):
     quantity: int = Field(gt=0, description="Cantidad de garrafones")
     delivery_address: str
     delivery_date: str
     delivery_time: str
     notes: Optional[str] = ""
+    coupon_code: Optional[str] = None
 
 class Order(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -78,6 +106,10 @@ class Order(BaseModel):
     delivery_time: str
     notes: str
     status: str  # pending, in_transit, delivered, cancelled
+    coupon_code: Optional[str] = None
+    discount_percentage: int = 0
+    original_total: float
+    final_total: float
     created_at: str
 
 class OrderUpdate(BaseModel):
