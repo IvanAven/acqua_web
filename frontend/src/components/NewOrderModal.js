@@ -176,9 +176,84 @@ const NewOrderModal = ({ onClose, onSuccess }) => {
               data-testid="order-notes-input"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="px-4 py-3 rounded-lg border border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 transition-all min-h-[100px]"
+              className="px-4 py-3 rounded-lg border border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 transition-all min-h-[80px]"
               placeholder="Instrucciones especiales para la entrega..."
             />
+          </div>
+
+          {/* Coupon Section */}
+          <div>
+            <Label htmlFor="coupon_code" className="text-slate-700 font-medium mb-2 block flex items-center gap-2">
+              <Tag className="w-4 h-4" />
+              Cupón de Descuento (Opcional)
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="coupon_code"
+                data-testid="order-coupon-input"
+                type="text"
+                value={formData.coupon_code}
+                onChange={(e) => {
+                  setFormData({ ...formData, coupon_code: e.target.value.toUpperCase() });
+                  setCouponValid(null);
+                  setDiscount(0);
+                }}
+                className="h-12 px-4 rounded-lg border border-slate-200 focus:border-sky-500 focus:ring-2 focus:ring-sky-100 transition-all"
+                placeholder="Ingresa tu cupón"
+              />
+              <Button
+                type="button"
+                onClick={validateCoupon}
+                disabled={validatingCoupon || !formData.coupon_code.trim()}
+                data-testid="validate-coupon-button"
+                className="bg-sky-500 hover:bg-sky-600 text-white px-6 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {validatingCoupon ? "..." : "Aplicar"}
+              </Button>
+            </div>
+            {couponValid === true && (
+              <div className="mt-2 flex items-center gap-2 text-green-600 text-sm">
+                <Check className="w-4 h-4" />
+                <span>¡Cupón aplicado! {discount}% de descuento</span>
+              </div>
+            )}
+            {couponValid === false && (
+              <div className="mt-2 text-red-600 text-sm">
+                Cupón inválido o expirado
+              </div>
+            )}
+          </div>
+
+          {/* Price Summary */}
+          <div className="bg-sky-50 rounded-lg p-4 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-600">Cantidad:</span>
+              <span className="font-medium text-slate-900">{formData.quantity} garrafones</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-slate-600">Precio unitario:</span>
+              <span className="font-medium text-slate-900">${PRICE_PER_BOTTLE} MXN</span>
+            </div>
+            {discount > 0 && (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">Subtotal:</span>
+                  <span className="line-through text-slate-500">${calculateTotal().original} MXN</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-green-600 font-medium">Descuento ({discount}%):</span>
+                  <span className="text-green-600 font-medium">
+                    -${(calculateTotal().original - calculateTotal().final).toFixed(2)} MXN
+                  </span>
+                </div>
+              </>
+            )}
+            <div className="border-t border-sky-200 pt-2 flex justify-between">
+              <span className="font-semibold text-slate-900">Total:</span>
+              <span className="font-bold text-sky-600 text-lg">
+                ${calculateTotal().final.toFixed(2)} MXN
+              </span>
+            </div>
           </div>
 
           <div className="flex gap-3 pt-4">
