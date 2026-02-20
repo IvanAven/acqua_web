@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Droplets, LogOut, Package, Clock, CheckCircle, XCircle, Truck, Plus } from "lucide-react";
+import { Droplets, LogOut, Package, Clock, CheckCircle, XCircle, Truck, Plus, Tag, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
