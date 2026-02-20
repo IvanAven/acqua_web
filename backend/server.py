@@ -419,10 +419,13 @@ async def create_coupon(coupon_data: CouponCreate, current_user: dict = Depends(
             detail="El código de cupón ya existe"
         )
     
+    # Parse expiry date and add timezone
+    expiry_dt = datetime.fromisoformat(coupon_data.expiry_date).replace(tzinfo=timezone.utc)
+    
     coupon_dict = {
         "code": coupon_data.code.upper(),
         "discount_percentage": coupon_data.discount_percentage,
-        "expiry_date": coupon_data.expiry_date,
+        "expiry_date": expiry_dt.isoformat(),
         "is_active": True,
         "max_uses": coupon_data.max_uses,
         "current_uses": 0,
