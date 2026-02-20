@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import { X } from "lucide-react";
+import { X, Tag, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,17 +9,61 @@ import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 const API_URL = process.env.REACT_APP_BACKEND_URL + "/api";
+const PRICE_PER_BOTTLE = 50;
 
 const NewOrderModal = ({ onClose, onSuccess }) => {
   const { token, user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+  const [couponValid, setCouponValid] = useState(null);
+  const [discount, setDiscount] = useState(0);
   const [formData, setFormData] = useState({
     quantity: 1,
     delivery_address: user?.address || "",
     delivery_date: "",
     delivery_time: "09:00-12:00",
     notes: "",
+    coupon_code: "",
   });
+
+  const validateCoupon = async () => {
+    if (!formData.coupon_code.trim()) {
+      setCouponValid(null);
+      setDiscount(0);
+      return;
+    }
+
+    setValidatingCoupon(true);
+    try {
+      const response = await axios.post(
+        `${API_URL}/coupons/validate`,
+        { code: formData.coupon_code },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.valid) {
+        setCouponValid(true);
+        setDiscount(response.data.discount_percentage);
+        toast.success(response.data.message);
+      } else {
+        setCouponValid(false);
+        setDiscount(0);
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      setCouponValid(false);
+      setDiscount(0);
+      toast.error("Error al validar cupón");
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  const calculateTotal = () => {
+    const original = formData.quantity * PRICE_PER_BOTTLE;
+    const final = original * (1 - discount / 100);
+    return { original, final };
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
