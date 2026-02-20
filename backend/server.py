@@ -237,6 +237,31 @@ async def get_me(current_user: dict = Depends(get_current_user)):
 @api_router.post("/orders", response_model=Order)
 async def create_order(order_data: OrderCreate, current_user: dict = Depends(get_current_user)):
     import uuid
+    
+    # Calculate price
+    original_total = order_data.quantity * PRICE_PER_BOTTLE
+    discount_percentage = 0
+    final_total = original_total
+    coupon_code = None
+    
+    # Apply coupon if provided
+    if order_data.coupon_code:
+        coupon = await db.coupons.find_one({"code": order_data.coupon_code.upper()})
+        if coupon and coupon["is_active"]:
+            # Check expiry
+            if datetime.fromisoformat(coupon["expiry_date"]) > datetime.now(timezone.utc):
+                # Check max uses
+                if coupon["max_uses"] is None or coupon["current_uses"] < coupon["max_uses"]:
+                    discount_percentage = coupon["discount_percentage"]
+                    final_total = original_total * (1 - discount_percentage / 100)
+                    coupon_code = coupon["code"]
+                    
+                    # Increment coupon usage
+                    await db.coupons.update_one(
+                        {"code": coupon["code"]},
+                        {"$inc": {"current_uses": 1}}
+                    )
+    
     order_dict = {
         "id": str(uuid.uuid4()),
         "customer_email": current_user["email"],
@@ -248,6 +273,10 @@ async def create_order(order_data: OrderCreate, current_user: dict = Depends(get
         "delivery_time": order_data.delivery_time,
         "notes": order_data.notes or "",
         "status": "pending",
+        "coupon_code": coupon_code,
+        "discount_percentage": discount_percentage,
+        "original_total": original_total,
+        "final_total": final_total,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
