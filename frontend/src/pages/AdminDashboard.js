@@ -11,6 +11,7 @@ import {
   CheckCircle,
   XCircle,
   Truck,
+  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -22,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import CouponsManagement from "@/components/CouponsManagement";
 
 const API_URL = process.env.REACT_APP_BACKEND_URL + "/api";
 
