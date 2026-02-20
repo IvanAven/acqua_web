@@ -380,6 +380,135 @@ async def get_stats(current_user: dict = Depends(get_current_user)):
             "pending_orders": pending_orders
         }
 
+# ==================== COUPON ROUTES ====================
+
+async def generate_loyalty_coupon(customer_email: str):
+    """Generate automatic coupon for loyal customers (5+ delivered orders)"""
+    delivered_count = await db.orders.count_documents({
+        "customer_email": customer_email,
+        "status": "delivered"
+    })
+    
+    # Generate coupon at 5, 10, 15, 20... delivered orders
+    if delivered_count > 0 and delivered_count % 5 == 0:
+        # Check if coupon already exists for this milestone
+        coupon_code = f"LOYAL{delivered_count}_{customer_email.split('@')[0].upper()[:5]}"
+        existing = await db.coupons.find_one({"code": coupon_code})
+        
+        if not existing:
+            # Create loyalty coupon (20% off, valid for 30 days)
+            coupon_dict = {
+                "code": coupon_code,
+                "discount_percentage": 20,
+                "expiry_date": (datetime.now(timezone.utc) + timedelta(days=30)).isoformat(),
+                "is_active": True,
+                "max_uses": 1,
+                "current_uses": 0,
+                "customer_email": customer_email,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.coupons.insert_one(coupon_dict)
+
+@api_router.post("/coupons", response_model=Coupon)
+async def create_coupon(coupon_data: CouponCreate, current_user: dict = Depends(get_current_admin)):
+    # Check if coupon code already exists
+    existing = await db.coupons.find_one({"code": coupon_data.code.upper()})
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El código de cupón ya existe"
+        )
+    
+    coupon_dict = {
+        "code": coupon_data.code.upper(),
+        "discount_percentage": coupon_data.discount_percentage,
+        "expiry_date": coupon_data.expiry_date,
+        "is_active": True,
+        "max_uses": coupon_data.max_uses,
+        "current_uses": 0,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.coupons.insert_one(coupon_dict)
+    return Coupon(**coupon_dict)
+
+@api_router.get("/coupons", response_model=List[Coupon])
+async def get_coupons(current_user: dict = Depends(get_current_admin)):
+    coupons = await db.coupons.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return [Coupon(**coupon) for coupon in coupons]
+
+@api_router.delete("/coupons/{code}")
+async def delete_coupon(code: str, current_user: dict = Depends(get_current_admin)):
+    result = await db.coupons.delete_one({"code": code.upper()})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Cupón no encontrado")
+    return {"message": "Cupón eliminado exitosamente"}
+
+@api_router.post("/coupons/validate", response_model=CouponValidateResponse)
+async def validate_coupon(coupon_data: CouponValidate, current_user: dict = Depends(get_current_user)):
+    coupon = await db.coupons.find_one({"code": coupon_data.code.upper()})
+    
+    if not coupon:
+        return CouponValidateResponse(
+            valid=False,
+            discount_percentage=0,
+            message="Cupón no encontrado"
+        )
+    
+    if not coupon["is_active"]:
+        return CouponValidateResponse(
+            valid=False,
+            discount_percentage=0,
+            message="Cupón inactivo"
+        )
+    
+    # Check expiry
+    if datetime.fromisoformat(coupon["expiry_date"]) <= datetime.now(timezone.utc):
+        return CouponValidateResponse(
+            valid=False,
+            discount_percentage=0,
+            message="Cupón expirado"
+        )
+    
+    # Check max uses
+    if coupon["max_uses"] is not None and coupon["current_uses"] >= coupon["max_uses"]:
+        return CouponValidateResponse(
+            valid=False,
+            discount_percentage=0,
+            message="Cupón agotado"
+        )
+    
+    # Check if it's a customer-specific coupon
+    if "customer_email" in coupon and coupon["customer_email"] != current_user["email"]:
+        return CouponValidateResponse(
+            valid=False,
+            discount_percentage=0,
+            message="Este cupón no es válido para tu cuenta"
+        )
+    
+    return CouponValidateResponse(
+        valid=True,
+        discount_percentage=coupon["discount_percentage"],
+        message=f"¡Cupón válido! {coupon['discount_percentage']}% de descuento"
+    )
+
+@api_router.get("/coupons/my-coupons", response_model=List[Coupon])
+async def get_my_coupons(current_user: dict = Depends(get_current_user)):
+    # Get customer-specific coupons that are still valid
+    coupons = await db.coupons.find({
+        "customer_email": current_user["email"],
+        "is_active": True
+    }, {"_id": 0}).to_list(1000)
+    
+    # Filter out expired or fully used coupons
+    valid_coupons = []
+    for coupon in coupons:
+        if datetime.fromisoformat(coupon["expiry_date"]) > datetime.now(timezone.utc):
+            if coupon["max_uses"] is None or coupon["current_uses"] < coupon["max_uses"]:
+                valid_coupons.append(Coupon(**coupon))
+    
+    return valid_coupons
+
 # ==================== INIT ADMIN ====================
 
 @app.on_event("startup")
