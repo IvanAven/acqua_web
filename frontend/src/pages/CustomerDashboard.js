@@ -14,21 +14,26 @@ const CustomerDashboard = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [stats, setStats] = useState({ total_orders: 0, pending_orders: 0 });
+  const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showNewOrder, setShowNewOrder] = useState(false);
 
   const fetchData = async () => {
     try {
-      const [ordersRes, statsRes] = await Promise.all([
+      const [ordersRes, statsRes, couponsRes] = await Promise.all([
         axios.get(`${API_URL}/orders`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
         axios.get(`${API_URL}/stats`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
+        axios.get(`${API_URL}/coupons/my-coupons`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       ]);
       setOrders(ordersRes.data);
       setStats(statsRes.data);
+      setCoupons(couponsRes.data);
     } catch (error) {
       toast.error("Error al cargar los datos");
     } finally {
