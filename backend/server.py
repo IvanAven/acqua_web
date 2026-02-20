@@ -514,7 +514,11 @@ async def get_my_coupons(current_user: dict = Depends(get_current_user)):
     # Filter out expired or fully used coupons
     valid_coupons = []
     for coupon in coupons:
-        if datetime.fromisoformat(coupon["expiry_date"]) > datetime.now(timezone.utc):
+        expiry_dt = datetime.fromisoformat(coupon["expiry_date"])
+        if expiry_dt.tzinfo is None:
+            expiry_dt = expiry_dt.replace(tzinfo=timezone.utc)
+        
+        if expiry_dt > datetime.now(timezone.utc):
             if coupon["max_uses"] is None or coupon["current_uses"] < coupon["max_uses"]:
                 valid_coupons.append(Coupon(**coupon))
     
