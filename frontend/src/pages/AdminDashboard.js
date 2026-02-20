@@ -76,6 +76,9 @@ const AdminDashboard = () => {
           <NavLink to="/admin/customers" icon={Users}>
             Clientes
           </NavLink>
+          <NavLink to="/admin/coupons" icon={Tag}>
+            Cupones
+          </NavLink>
         </nav>
 
         <div className="p-4 border-t border-slate-200">
